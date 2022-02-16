@@ -13,6 +13,9 @@ from tkinter.ttk import *
 class Win(Frame):
     def __init__(self, container):
         super().__init__(container)
+
+        self.journals = Journals()
+
         self.init_ui()
 
     def init_ui(self):
@@ -81,15 +84,6 @@ def main():
     app.pack()
     # displays the window
     root.mainloop()
-
-    debug_text = Text(app, height=8, width=40)
-    debug_scroller = Scrollbar(app)
-    debug_text.configure(yscrollcommand=debug_scroller.set)
-    debug_text.pack(side=LEFT)
-    debug_scroller.configure(command=debug_text.yview)
-    debug_scroller.pack(side=RIGHT, fill=Y)
-
-    these_journals = Journals()
 
 
 if __name__ == '__main__':
