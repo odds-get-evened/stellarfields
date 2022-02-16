@@ -21,8 +21,10 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Topic :: Games/Entertainment :: Simulation"
     ],
-    packages=["org.white5moke"],
-    install_requires=[
-        "tk"
-    ]
+    packages=find_packages(),
+    entry_points={
+        'console_scripts': [
+            'stellarfields = main:app'
+        ]
+    }
 )
