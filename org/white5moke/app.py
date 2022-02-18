@@ -13,7 +13,7 @@ class App:
     def __init__(self):
         journal_process = threading.Thread(target=journals_startup)
         journal_process.daemon = True
-        journal_process.start()
+        # journal_process.start()
 
         root = Tk()
         tk_width = 480
