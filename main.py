@@ -1,5 +1,3 @@
-import sys
-
 from org.white5moke.app import App
 
 
@@ -8,4 +6,4 @@ def app():
 
 
 if __name__ == '__main__':
-    sys.exit(app())
+    app()

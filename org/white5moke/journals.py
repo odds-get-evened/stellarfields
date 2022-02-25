@@ -10,8 +10,6 @@ class Journals:
         self.file_hold = []
         self.events = []
 
-        self.acquire_journals()
-
     def read_journal(self, filename: str) -> list[dict]:
         with open(filename, "r") as file_:
             for line in file_:
@@ -26,7 +24,6 @@ class Journals:
         return res['filename']
 
     def acquire_journals(self) -> list[dict]:
-        print("acquiring journals...")
         dir_ = self.user_home_dir
         search_regex = re.compile("Journal\.(.*)\..*\.log")
 
@@ -39,7 +36,5 @@ class Journals:
                     absolute_filename = os.path.join(root, f)
                     file_data = {'filename': absolute_filename, 'timestamp': journal_time.timestamp()}
                     self.file_hold.append(file_data)
-                    print("file: {}".format(absolute_filename))
-        print("all journals retrieved!")
 
         return self.file_hold
