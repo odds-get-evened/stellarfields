@@ -3,9 +3,13 @@ import json
 import os
 import re
 
+JSON_TIMESTAMP_NAME = "timestamp"
+JSON_EVENT_NAME = "event"
 
-class Journals:
+
+class Journals():
     def __init__(self):
+        super().__init__()
         self.user_home_dir = os.path.expanduser("~")
         self.file_hold = []
         self.events = []
@@ -23,7 +27,7 @@ class Journals:
 
         return res['filename']
 
-    def acquire_journals(self) -> list[dict]:
+    def acquire_journals(self):
         dir_ = self.user_home_dir
         search_regex = re.compile("Journal\.(.*)\..*\.log")
 
@@ -36,5 +40,3 @@ class Journals:
                     absolute_filename = os.path.join(root, f)
                     file_data = {'filename': absolute_filename, 'timestamp': journal_time.timestamp()}
                     self.file_hold.append(file_data)
-
-        return self.file_hold
