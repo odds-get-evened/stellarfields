@@ -6,10 +6,13 @@ from org.white5moke.journals import Journals, JSON_TIMESTAMP_NAME, JSON_EVENT_NA
 import json
 # from tinydb import TinyDB, Query
 import os
+from datetime import datetime
+import re
 
 
 class StellarWindow:
     def __init__(self):
+        self.user_home_path: bytes = None
         self.thread_journals: Thread = None
         self.journal_tree: Treeview = None
         self.journal_progress: Progressbar = None
@@ -31,38 +34,46 @@ class StellarWindow:
         self.x = int(self.root.winfo_screenwidth() / 2 - self.width)
         self.y = int(self.root.winfo_screenheight() / 2 - self.height)
         self.root.geometry("{}x{}+{}+{}".format(self.width, self.height, self.x, self.y))
+        self.setup()
         self.build()
         self.root.mainloop()
+
+    def setup(self):
+        self.user_home_path = os.path.join(os.path.expanduser("~"), ".stellarfields")
+        if not os.path.exists(self.user_home_path):
+            os.mkdir(self.user_home_path)
+        current_log_path = os.path.join(self.user_home_path, "current.log")
+        pattern = re.compile("Saved\sGames.*Elite\sDangerous$")
+        if not os.path.exists(current_log_path):
+            for root, dirs, files in os.walk(os.path.expanduser("~")):
+                dirs = [dir_ for dir_ in dirs if dir_[:1] != '.']
+
+                for dir__ in dirs:
+                    full_path = os.path.join(root, dir__)
+                    if pattern.search(str(full_path)):
+                        self.user_home_path = full_path
+                        youngest_file = max([(os.path.getmtime(os.path.join(self.user_home_path, fname)), fname) for fname in os.listdir(self.user_home_path)])[1]
+                        print(youngest_file)
+                        break
+
 
     def close_up_shop(self):
         if messagebox.askokcancel("Quit", "Are you sure?"):
             self.root.destroy()
 
-    def setup_user_files(self):
-        sf_path = os.path.join(os.path.expanduser("~"), ".stellarfields")
-        if not os.path.exists(sf_path):
-            os.mkdir(sf_path)
-        # put current file from Frontier into user directory and refer to it instead
-        active_filename = self.journals.acquire_active_journal()
-        user_filename = os.path.join(sf_path, "current.log")
-        # create the current cache file if it doesn't exist
-        if not os.path.exists(user_filename):
-            shutil.copy(active_filename, user_filename)
-        # make sure the current is up-to-date with last active ED journal
-        if os.path.getmtime(active_filename) > os.path.getmtime(user_filename):
-            shutil.copy(active_filename, user_filename)
-
     def get_journal_thread(self):
         print("starting to acquire journals...")
         journals = self.journals.acquire_journals()
         filename = self.journals.acquire_active_journal()
+        print(datetime.fromtimestamp(os.path.getmtime()).strftime("%H:%M.%S %Y-%m-%d"))
+        """
         active = self.journals.read_journal(filename)
         self.journal_progress.stop()
         # print(json.dumps(active, indent=4))
         print("journals got got.")
         self.provide_events_to_table(json.dumps(active))
         self.active_journal = active
-        self.setup_user_files()
+        """
 
     def provide_events_to_table(self, json_data):
         # convert string to json objects
@@ -99,6 +110,5 @@ class StellarWindow:
                                             mode="indeterminate",
                                             orient="horizontal")
         self.journal_progress.pack()
-        self.get_journal()
 
         self.maine_frame.pack(expand=True, fill=BOTH, padx=10, pady=10, side=TOP)
