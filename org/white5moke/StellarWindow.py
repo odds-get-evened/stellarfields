@@ -1,12 +1,16 @@
+import shutil
 from threading import Thread
-from tkinter import Tk, BOTH, TOP
+from tkinter import Tk, BOTH, TOP, messagebox
 from tkinter.ttk import Treeview, Label, Frame, Progressbar
 from org.white5moke.journals import Journals, JSON_TIMESTAMP_NAME, JSON_EVENT_NAME
 import json
+# from tinydb import TinyDB, Query
+import os
 
 
 class StellarWindow:
     def __init__(self):
+        self.thread_journals: Thread = None
         self.journal_tree: Treeview = None
         self.journal_progress: Progressbar = None
         self.event_scroll = None
@@ -16,7 +20,11 @@ class StellarWindow:
 
         self.journals: Journals = Journals()
 
+        # self.db = TinyDB()
+
         self.root = Tk()
+        #
+        self.root.protocol("WM_DELETE_WINDOW", self.close_up_shop)
         self.root.title("stellarfields")
         self.width = 400
         self.height = 640
@@ -25,6 +33,24 @@ class StellarWindow:
         self.root.geometry("{}x{}+{}+{}".format(self.width, self.height, self.x, self.y))
         self.build()
         self.root.mainloop()
+
+    def close_up_shop(self):
+        if messagebox.askokcancel("Quit", "Are you sure?"):
+            self.root.destroy()
+
+    def setup_user_files(self):
+        sf_path = os.path.join(os.path.expanduser("~"), ".stellarfields")
+        if not os.path.exists(sf_path):
+            os.mkdir(sf_path)
+        # put current file from Frontier into user directory and refer to it instead
+        active_filename = self.journals.acquire_active_journal()
+        user_filename = os.path.join(sf_path, "current.log")
+        # create the current cache file if it doesn't exist
+        if not os.path.exists(user_filename):
+            shutil.copy(active_filename, user_filename)
+        # make sure the current is up-to-date with last active ED journal
+        if os.path.getmtime(active_filename) > os.path.getmtime(user_filename):
+            shutil.copy(active_filename, user_filename)
 
     def get_journal_thread(self):
         print("starting to acquire journals...")
@@ -36,6 +62,7 @@ class StellarWindow:
         print("journals got got.")
         self.provide_events_to_table(json.dumps(active))
         self.active_journal = active
+        self.setup_user_files()
 
     def provide_events_to_table(self, json_data):
         # convert string to json objects
@@ -49,9 +76,14 @@ class StellarWindow:
             )
 
     def get_journal(self):
+        """
+        TODO : decide between updating current journal or using old
+            user file. need a way to use old file first, but trigger
+            an update if needed in the background
+        """
         self.journal_progress.start(5)
-        thread1 = Thread(target=self.get_journal_thread)
-        thread1.start()
+        self.thread_journals = Thread(target=self.get_journal_thread)
+        self.thread_journals.start()
 
     def build(self):
         self.maine_frame = Frame(self.root)
