@@ -1,13 +1,15 @@
 import json
 import os.path
 import re
+import threading
 import tkinter.constants
-from tkinter import Tk, BOTH, TOP, X, Scrollbar, RIGHT, LEFT, NW, Y
+from tkinter import Tk, BOTH, TOP, X, Scrollbar, RIGHT, LEFT, NW, Y, Label
 from tkinter.ttk import Treeview, Frame, Progressbar
 
 
 class StellarWindow:
     def __init__(self):
+        self.timer: threading.Timer = None
         self.journal_tree_scroll: Scrollbar = None
         self.user_home_dir = None
         self.events = None
@@ -19,18 +21,20 @@ class StellarWindow:
         self.root = Tk()
         #
         self.root.title("stellarfields")
-        self.width = 400
+        self.width = 480
         self.height = 640
+        self.root.minsize(self.width, self.height)
         self.x = int(self.root.winfo_screenwidth() / 2 - self.width)
         self.y = int(self.root.winfo_screenheight() / 2 - self.height)
         self.root.geometry("{}x{}+{}+{}".format(self.width, self.height, self.x, self.y))
 
-        self.bootup()
+        self.boot_up()
 
         self.build()
+
         self.root.mainloop()
 
-    def bootup(self):
+    def boot_up(self):
         self.user_home_dir = os.path.expanduser("~")
         if os.name == 'nt':  # Windows
             self.windows_boot()
@@ -60,29 +64,40 @@ class StellarWindow:
 
     def update_events_table(self, events):
         for i, event in enumerate(events):
-            # print(event['event'])
-            self.journal_tree.insert('', index=i, values=(event['timestamp'], event['event']))
+            '''
+            TODO : put these in a checklist to filter event types
+            '''
+            i_need = ['Scan', 'FSSAllBodiesFound', 'FSSDiscoveryScan', 'FSDJump', 'ApproachBody']
+            if any([i == event['event'] for i in i_need]):
+                self.journal_tree.insert('', index=i, values=(event['timestamp'], event['event']))
 
     def build(self):
         self.maine_frame = Frame(self.root)
 
-        self.journal_tree = Treeview(self.maine_frame)
-        self.journal_tree.pack(side=LEFT, fill=BOTH)
-
-        self.journal_tree_scroll = Scrollbar(self.maine_frame, orient='vertical', command=self.journal_tree.yview)
-        self.journal_tree_scroll.pack(side=RIGHT, fill=Y)
-        self.journal_tree.configure(xscrollcommand=self.journal_tree_scroll.set)
-
+        self.journal_tree = Treeview(self.maine_frame, selectmode='browse')
+        self.journal_tree.pack(expand=True, fill=BOTH, side=LEFT)
         self.journal_tree['show'] = 'headings'
         self.journal_tree['columns'] = (1, 2)
         self.journal_tree.heading(1, text="time")
         self.journal_tree.heading(2, text="type")
+        self.journal_tree.bind('<ButtonRelease-1>', self.event_item_selection)
+
+        self.journal_tree_scroll = Scrollbar(self.maine_frame, orient=tkinter.VERTICAL, command=self.journal_tree.yview)
+        self.journal_tree.configure(yscrollcommand=self.journal_tree_scroll.set)
+        self.journal_tree_scroll.pack(side=RIGHT, expand=False, fill=Y)
 
         self.update_events_table(self.events)
+        # self.timer = threading.Timer(10, self.update_events_table(self.events)).start()
 
-        self.journal_progress = Progressbar(self.maine_frame,
-                                            mode="indeterminate",
-                                            orient="horizontal")
-        # self.journal_progress.pack(expand=False, fill=X, pady=10)
+        some_stuff_frame: Frame = Frame(self.root)
+        placeholder = Label(some_stuff_frame, text="placeholder")
+        placeholder.pack()
+        some_stuff_frame.pack(fill=BOTH, side=tkinter.BOTTOM)
 
-        self.maine_frame.pack(expand=True, fill=BOTH, padx=10, pady=10, side=TOP)
+        self.maine_frame.pack(expand=True, fill=BOTH)
+
+        self.timer = threading.Timer(10, self.update_events_table(self.events))
+        self.timer.start()
+
+    def event_item_selection(self, e):
+        selected_item = self.journal_tree.selection()[0]
