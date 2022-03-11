@@ -1,15 +1,16 @@
 import json
 import os.path
 import re
-import threading
+import time
 import tkinter.constants
-from tkinter import Tk, BOTH, TOP, X, Scrollbar, RIGHT, LEFT, NW, Y, Label
+from tkinter import Tk, BOTH, Scrollbar, RIGHT, LEFT, Y, Label, StringVar
 from tkinter.ttk import Treeview, Frame, Progressbar
 
 
 class StellarWindow:
     def __init__(self):
-        self.timer: threading.Timer = None
+        self.last_load_label: Label = None
+        self.last_update = None
         self.journal_tree_scroll: Scrollbar = None
         self.user_home_dir = None
         self.events = None
@@ -17,6 +18,7 @@ class StellarWindow:
         self.journal_progress: Progressbar = None
         self.journal_tree: Treeview = None
         self.maine_frame = None
+        self.scheduler = None
 
         self.root = Tk()
         #
@@ -34,6 +36,11 @@ class StellarWindow:
 
         self.root.mainloop()
 
+    def fuckyou(self):
+        while True:
+            time.sleep(5)
+            print("fuck you")
+
     def boot_up(self):
         self.user_home_dir = os.path.expanduser("~")
         if os.name == 'nt':  # Windows
@@ -43,9 +50,17 @@ class StellarWindow:
             pass
         else:
             pass
-        
+
+        self.last_update = StringVar()
+        self.last_update.set(str(round(time.time() * 1000)))
+        self.fuckyou()
+
     def windows_boot(self):
-        saved_games_path = [os.path.join(self.user_home_dir, i) for i in os.listdir(self.user_home_dir) if i == 'Saved Games'][0]
+        saved_games_path = [
+            os.path.join(self.user_home_dir, i)
+            for i in os.listdir(self.user_home_dir)
+            if i == 'Saved Games'
+        ][0]
         ed_journals_path = os.path.join(saved_games_path, 'Frontier Developments', 'Elite Dangerous')
         pattern = re.compile("Journal\..*\.log")
         young_journal_filename = max(
@@ -57,19 +72,19 @@ class StellarWindow:
             ]
         )[1]
         self.current_journal = young_journal_filename
-        with open(self.current_journal, 'r') as f:
+        with open(self.current_journal, 'r', encoding='utf8') as f:
             self.events = [json.loads(line) for line in f.readlines()]
         f.close()
-        # print(self.events)
 
-    def update_events_table(self, events):
-        for i, event in enumerate(events):
+    def update_events_table(self):
+        for i, event in enumerate(self.events):
             '''
             TODO : put these in a checklist to filter event types
             '''
             i_need = ['Scan', 'FSSAllBodiesFound', 'FSSDiscoveryScan', 'FSDJump', 'ApproachBody']
-            if any([i == event['event'] for i in i_need]):
+            if any([j == event['event'] for j in i_need]):
                 self.journal_tree.insert('', index=i, values=(event['timestamp'], event['event']))
+        self.last_update.set(str(round(time.time() * 1000)))
 
     def build(self):
         self.maine_frame = Frame(self.root)
@@ -86,18 +101,14 @@ class StellarWindow:
         self.journal_tree.configure(yscrollcommand=self.journal_tree_scroll.set)
         self.journal_tree_scroll.pack(side=RIGHT, expand=False, fill=Y)
 
-        self.update_events_table(self.events)
-        # self.timer = threading.Timer(10, self.update_events_table(self.events)).start()
-
         some_stuff_frame: Frame = Frame(self.root)
         placeholder = Label(some_stuff_frame, text="placeholder")
         placeholder.pack()
+        self.last_load_label = Label(some_stuff_frame, textvariable=self.last_update)
+        self.last_load_label.pack()
         some_stuff_frame.pack(fill=BOTH, side=tkinter.BOTTOM)
 
         self.maine_frame.pack(expand=True, fill=BOTH)
-
-        self.timer = threading.Timer(10, self.update_events_table(self.events))
-        self.timer.start()
 
     def event_item_selection(self, e):
         selected_item = self.journal_tree.selection()[0]

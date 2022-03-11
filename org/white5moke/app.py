@@ -13,5 +13,6 @@ def random_int64() -> int:
 
 class App:
     def __init__(self):
-        print(str(random_int64()))
+        print("just for fun ^.^")
+        print("random 64 bit integer: " + str(random_int64()))
         self.main_window = StellarWindow()
