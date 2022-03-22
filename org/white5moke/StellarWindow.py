@@ -1,14 +1,20 @@
 import json
 import os.path
 import re
-import time
+import tkinter
 import tkinter.constants
+from datetime import datetime
 from tkinter import Tk, BOTH, Scrollbar, RIGHT, LEFT, Y, Label, StringVar
 from tkinter.ttk import Treeview, Frame, Progressbar
 
 
 class StellarWindow:
     def __init__(self):
+        self.events_we_need = [
+            'Scan', 'FSSAllBodiesFound', 'FSSDiscoveryScan',
+            'FSDJump', 'ApproachBody'
+        ]
+
         self.last_load_label: Label = None
         self.last_update = None
         self.journal_tree_scroll: Scrollbar = None
@@ -34,12 +40,9 @@ class StellarWindow:
 
         self.build()
 
-        self.root.mainloop()
+        self.post_build()
 
-    def fuckyou(self):
-        while True:
-            time.sleep(5)
-            print("fuck you")
+        self.root.mainloop()
 
     def boot_up(self):
         self.user_home_dir = os.path.expanduser("~")
@@ -52,8 +55,7 @@ class StellarWindow:
             pass
 
         self.last_update = StringVar()
-        self.last_update.set(str(round(time.time() * 1000)))
-        self.fuckyou()
+        self.last_update.set(datetime.now().strftime("%H:%M.%S"))
 
     def windows_boot(self):
         saved_games_path = [
@@ -75,16 +77,6 @@ class StellarWindow:
         with open(self.current_journal, 'r', encoding='utf8') as f:
             self.events = [json.loads(line) for line in f.readlines()]
         f.close()
-
-    def update_events_table(self):
-        for i, event in enumerate(self.events):
-            '''
-            TODO : put these in a checklist to filter event types
-            '''
-            i_need = ['Scan', 'FSSAllBodiesFound', 'FSSDiscoveryScan', 'FSDJump', 'ApproachBody']
-            if any([j == event['event'] for j in i_need]):
-                self.journal_tree.insert('', index=i, values=(event['timestamp'], event['event']))
-        self.last_update.set(str(round(time.time() * 1000)))
 
     def build(self):
         self.maine_frame = Frame(self.root)
@@ -109,6 +101,22 @@ class StellarWindow:
         some_stuff_frame.pack(fill=BOTH, side=tkinter.BOTTOM)
 
         self.maine_frame.pack(expand=True, fill=BOTH)
+
+    def post_build(self):
+        self.timed_update_events()
+
+    def timed_update_events(self):
+        self.update_events()
+        self.last_update.set(datetime.now().strftime("%H:%M.%S"))
+        print("updated: " + datetime.now().strftime("%H:%M.%S"))
+
+    def update_events(self):
+        self.clear_journal_tree()
+        [self.journal_tree.insert('', tkinter.END, values=(e['timestamp'], e['event'])) for e in
+         self.events if any([j == e['event'] for j in self.events_we_need])]
+
+    def clear_journal_tree(self):
+        [self.journal_tree.delete(e) for e in self.journal_tree.get_children()]
 
     def event_item_selection(self, e):
         selected_item = self.journal_tree.selection()[0]
