@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'stellarfields = main:app'
+            'stellarfields = app.booter:boot'
         ]
     }
 )

@@ -1,9 +1,11 @@
 import json
 import os.path
 import re
+import time
 import tkinter
 import tkinter.constants
 from datetime import datetime
+from threading import Thread
 from tkinter import Tk, BOTH, Scrollbar, RIGHT, LEFT, Y, Label, StringVar
 from tkinter.ttk import Treeview, Frame, Progressbar
 
@@ -32,8 +34,8 @@ class StellarWindow:
         self.width = 480
         self.height = 640
         self.root.minsize(self.width, self.height)
-        self.x = int(self.root.winfo_screenwidth() / 2 - self.width)
-        self.y = int(self.root.winfo_screenheight() / 2 - self.height)
+        self.x = int((self.root.winfo_screenwidth() / 2) - (self.width / 2))
+        self.y = int((self.root.winfo_screenheight() / 2) - (self.height / 2))
         self.root.geometry("{}x{}+{}+{}".format(self.width, self.height, self.x, self.y))
 
         self.boot_up()
@@ -103,15 +105,13 @@ class StellarWindow:
         self.maine_frame.pack(expand=True, fill=BOTH)
 
     def post_build(self):
-        self.timed_update_events()
-
-    def timed_update_events(self):
         self.update_events()
-        self.last_update.set(datetime.now().strftime("%H:%M.%S"))
-        print("updated: " + datetime.now().strftime("%H:%M.%S"))
 
     def update_events(self):
         self.clear_journal_tree()
+
+        [print(x) for x in self.events if any([k == x['event'] for k in self.events_we_need])]
+
         [self.journal_tree.insert('', tkinter.END, values=(e['timestamp'], e['event'])) for e in
          self.events if any([j == e['event'] for j in self.events_we_need])]
 
@@ -119,4 +119,5 @@ class StellarWindow:
         [self.journal_tree.delete(e) for e in self.journal_tree.get_children()]
 
     def event_item_selection(self, e):
+        print(e)
         selected_item = self.journal_tree.selection()[0]
